@@ -1,11 +1,11 @@
 package com.ajs.demo.banking.model;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import javax.persistence.Column;
 
 @Entity
 @Table(name = "User")
@@ -28,11 +28,11 @@ public class User {
 	@Column(name = "password")
 	private String password;
 
-	public Long getUserIdd() {
+	public Long getUserId() {
 		return userId;
 	}
 
-	public void setUserIdd(Long userId) {
+	public void setUserId(Long userId) {
 		this.userId = userId;
 	}
 

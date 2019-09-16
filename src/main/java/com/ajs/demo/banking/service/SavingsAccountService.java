@@ -1,13 +1,12 @@
 package com.ajs.demo.banking.service;
 
 
-import com.ajs.demo.banking.exceptions.ExceptionHandlerAdvice;
-import com.ajs.demo.banking.model.Account;
-import com.ajs.demo.banking.model.AccountTransactions;
-import com.ajs.demo.banking.model.TransactionInfo;
 import com.ajs.demo.banking.exceptions.LowBalanceException;
 import com.ajs.demo.banking.exceptions.SavingsAccountException;
 import com.ajs.demo.banking.exceptions.SavingsAccountNotFoundException;
+import com.ajs.demo.banking.model.Account;
+import com.ajs.demo.banking.model.AccountTransactions;
+import com.ajs.demo.banking.model.TransactionInfo;
 import com.ajs.demo.banking.model.User;
 import com.ajs.demo.banking.repository.AccountRepository;
 import com.ajs.demo.banking.repository.AccountTransactionsRepository;
@@ -28,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Transactional
 public class SavingsAccountService extends AccountService {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(ExceptionHandlerAdvice.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SavingsAccountService.class);
 
 	@Autowired
 	AccountRepository accountRepository;
@@ -60,13 +59,22 @@ public class SavingsAccountService extends AccountService {
 		}
 	}
 
+	public Account getAccount(Long accountId) {
+		Optional<Account> optionalAccount = accountRepository.findById(accountId);
+		Account account;
+		if (optionalAccount.isPresent()) {
+			account = optionalAccount.get();
+		} else {
+			throw new SavingsAccountNotFoundException("Account not present with accountId" + accountId);
+		}
+		return account;
+	}
+
 	@Override
 	public List<AccountTransactions> transact(TransactionInfo transactionInfo) {
-		Account fromAccount = accountRepository.findById(transactionInfo.getFromAccountId()).get();
-		Account toAccount = accountRepository.findById(transactionInfo.getToAccountId()).get();
-
+		Account fromAccount = getAccount(transactionInfo.getFromAccountId());
+		Account toAccount = getAccount(transactionInfo.getToAccountId());
 		List<AccountTransactions> accountTransactions = new ArrayList<>();
-
 		Integer amount = transactionInfo.getAmount();
 		AtomicInteger fromBalance = new AtomicInteger(fromAccount.getBalance());
 		AtomicInteger toBalance = new AtomicInteger(toAccount.getBalance());
@@ -107,7 +115,7 @@ public class SavingsAccountService extends AccountService {
 
 			return accountTransactions;
 		} catch (Exception e) {
-			throw new SavingsAccountException("Exception occured in transaction" );
+			throw new SavingsAccountException("Exception occured in transaction");
 		}
 	}
 

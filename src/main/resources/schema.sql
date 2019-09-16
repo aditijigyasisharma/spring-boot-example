@@ -1,3 +1,4 @@
+drop table if exists user;
 create table user (
 user_id long not null AUTO_INCREMENT,
 name varchar,
@@ -7,6 +8,8 @@ password varchar,
 primary key(user_id)
 );
 
+drop table if exists account;
+
 create table account (
   account_id long not null AUTO_INCREMENT,
    balance double not null,
@@ -14,6 +17,8 @@ create table account (
    foreign key (user_id) references user(user_id),
    primary key(account_id)
 );
+
+drop table if exists account_transactions;
 
 create table account_transactions (
    id long not null AUTO_INCREMENT,

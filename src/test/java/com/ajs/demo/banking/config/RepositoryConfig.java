@@ -9,15 +9,13 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 @Configuration
 @EnableAutoConfiguration
-@EntityScan(basePackages = {"com.ajs.demo.banking"})
-@EnableJpaRepositories(basePackageClasses = {AccountRepository.class, UserRepository.class, AccountTransactionsRepository.class})
+@EntityScan(basePackages = {"com.ajs.demo.banking.model"})
+@EnableJpaRepositories(basePackageClasses = {UserRepository.class, AccountRepository.class, AccountTransactionsRepository.class})
 @Import({SavingsAccountService.class})
 @EnableTransactionManagement
-public class BankingDemoConfigTest {
+public class RepositoryConfig {
 }
-

@@ -1,69 +1,90 @@
 package com.ajs.demo.banking.controller;
 
 
-import com.ajs.demo.banking.AbstractIntegrationTest;
+import com.ajs.demo.banking.BasicTestConfig;
 import com.ajs.demo.banking.model.Account;
-import com.ajs.demo.banking.service.SavingsAccountService;
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.ajs.demo.banking.model.AccountTransactions;
+import com.ajs.demo.banking.model.TransactionInfo;
 import org.junit.Test;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.core.Is.is;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-public class AccountControllerTest  extends AbstractIntegrationTest {
+@AutoConfigureMockMvc
+public class AccountControllerTest extends BasicTestConfig {
 
 	@MockBean
 	private SavingsAccountsController savingsAccountsController;
 
-	private Long ACCOUNT_ID = 103L;
-	private Integer BALANCE = 1000;
-	private  Long USER_ID = 101L;
-	private MockMvc mockMvc = null;
+	@Autowired
+	private MockMvc mockMvc;
 
-	@Mock
-	private SavingsAccountService savingsAccountService;
-
-
-
-	@BeforeEach
-	public void setUp() {
-		if (this.mockMvc == null) {
-			this.mockMvc = MockMvcBuilders.standaloneSetup(new SavingsAccountsController(savingsAccountService)).build();
-		}
-	}
 	@Test
-	public void getAccountDetails() throws Exception {
-		Account account = new Account();
-		account.setAccountId(ACCOUNT_ID);
-		account.setBalance(BALANCE);
-		account.setUserId(USER_ID);
+	public void testGetAccountDetails() throws Exception {
+		Account account = initAccount();
 
-		MvcResult mvcResult = this.mockMvc.perform(get("/accounts/savings/" +ACCOUNT_ID)
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(account))).andReturn();
+		ResponseEntity<Account> responseEntity = new ResponseEntity<>(account, HttpStatus.OK);
+		given(savingsAccountsController.getAccountDetails(ACCOUNT_ID)).willReturn(responseEntity);
 
-		assertEquals(HttpStatus.CREATED.value(), mvcResult.getResponse().getStatus());
+		this.mockMvc.perform(get("http://localhost:8080/accounts/savings/" + ACCOUNT_ID)
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andExpect(jsonPath("balance", is(account.getBalance())));
 
-		Account accountNew = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), new TypeReference<Account>() {
-		});
-		assertEquals(accountNew.getAccountId(),account.getAccountId() );
 	}
 
+	@Test
+	public void testGetAccountStatement() throws Exception {
+		AccountTransactions accountTransactions = initAccountTransaction();
+		List<AccountTransactions> accountTransactionsList = new ArrayList<>();
+		accountTransactionsList.add(accountTransactions);
 
+		ResponseEntity<List<AccountTransactions>> responseEntity = new ResponseEntity<>(accountTransactionsList, HttpStatus.OK);
+		given(savingsAccountsController.getAccountStatement(ACCOUNT_ID)).willReturn(responseEntity);
+
+		this.mockMvc.perform(get("http://localhost:8080/accounts/savings/" + ACCOUNT_ID + "/statement")
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk());
+	}
+
+	@Test
+	public void testCreateAccount() throws Exception {
+		Account account = initAccount();
+		ResponseEntity<Account> responseEntity = new ResponseEntity<>(account, HttpStatus.CREATED);
+		given(savingsAccountsController.createAccount(account)).willReturn(responseEntity);
+		String inputJson = this.convertToJson(account);
+		this.mockMvc.perform(put("http://localhost:8080/accounts/savings/create").header("Accept", "application/json").contentType(MediaType.APPLICATION_JSON_VALUE).content(inputJson)).andExpect(status().isOk());
+
+	}
+
+	@Test
+	public void testTransactAccount() throws Exception {
+		AccountTransactions toAccountTransactions = initAccountTransaction();
+		List<AccountTransactions> accountTransactionsList = new ArrayList<>();
+		AccountTransactions fromAccountTransactions = initAccountTransaction();
+
+		fromAccountTransactions.setBalance(500);
+		toAccountTransactions.setBalance(1000);
+
+		accountTransactionsList.add(toAccountTransactions);
+		accountTransactionsList.add(fromAccountTransactions);
+
+		TransactionInfo transactionInfo = initTransactionInfo();
+		ResponseEntity<List<AccountTransactions>> responseEntity = new ResponseEntity<>(accountTransactionsList, HttpStatus.OK);
+		given(savingsAccountsController.transact(transactionInfo)).willReturn(responseEntity);
+		String inputJson = this.convertToJson(transactionInfo);
+		this.mockMvc.perform(post("http://localhost:8080/accounts/savings/transact").header("Accept", "application/json").contentType(MediaType.APPLICATION_JSON_VALUE).content(inputJson)).andExpect(status().isOk());
+	}
 }
